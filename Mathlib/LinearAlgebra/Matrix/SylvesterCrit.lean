@@ -32,19 +32,23 @@ variable {A : Matrix n n R}
 
 def prinMinor (A : Matrix n n R) (i : n) : Matrix n n R := A --this should be the principal minor of length i × i
 
-theorem isPosDef_if_Pos_Det_PrinMinors {M : Matrix n n R}
+theorem isPosDef_if_pos_Det_PrinMinors {M : Matrix n n R}
 {h : ∀ i : n , (M.prinMinor i).det > 0 } : M.PosDef := by sorry
 
-theorem Pos_Det_PrinMinors_if_isPosDef {M : Matrix n n R}
+theorem pos_Det_PrinMinors_if_isPosDef {M : Matrix n n R}
 {h : M.IsHermitian} {hM : M.PosDef} : ∀ i : n , (M.prinMinor i).det > 0 := by sorry
 
 theorem isPosDef_iff_Pos_Det_PrinMinors {M : Matrix n n R}
 {h : M.IsHermitian} : M.PosDef ↔ (∀ i : n , (M.prinMinor i).det > 0) := by
   constructor
   · intro h1
-    apply Pos_Det_PrinMinors_if_isPosDef
+    apply pos_Det_PrinMinors_if_isPosDef
     · exact h
     · exact h1
   · intro h2
-    apply isPosDef_if_Pos_Det_PrinMinors
+    apply isPosDef_if_pos_Det_PrinMinors
     exact fun i ↦ h2 i
+
+end Matrix
+
+--hola
