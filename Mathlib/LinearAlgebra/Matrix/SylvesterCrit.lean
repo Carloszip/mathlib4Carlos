@@ -30,25 +30,27 @@ variable {m n : Type*} [DecidableEq n] [Fintype n] [DecidableEq m] [Fintype m]
 variable {R : Type v} [CommRing R] [PartialOrder R] [StarRing R]
 variable {A : Matrix n n R}
 
-def prinMinor (A : Matrix n n R) (i : n) : Matrix n n R := A --this should be the principal minor of length i × i
+def leading_Minor (A : Matrix n n R) (i : n) : Matrix n n R := A --to do
+--this should be the leading minor of length i × i
 
-theorem isPosDef_if_pos_Det_PrinMinors {M : Matrix n n R}
-{h : ∀ i : n , (M.prinMinor i).det > 0 } : M.PosDef := by sorry
+theorem isPosDef_if_pos_Det_LeadMinors {M : Matrix n n R}
+{h : ∀ i : n , (M.leading_Minor i).det > 0 } : M.PosDef := by sorry
 
-theorem pos_Det_PrinMinors_if_isPosDef {M : Matrix n n R}
-{h : M.IsHermitian} {hM : M.PosDef} : ∀ i : n , (M.prinMinor i).det > 0 := by sorry
+theorem pos_Det_LeadMinors_if_isPosDef {M : Matrix n n R}
+{h : M.IsHermitian} {hM : M.PosDef} : ∀ i : n , (M.leading_Minor i).det > 0 := by sorry
 
-theorem isPosDef_iff_Pos_Det_PrinMinors {M : Matrix n n R}
-{h : M.IsHermitian} : M.PosDef ↔ (∀ i : n , (M.prinMinor i).det > 0) := by
+theorem isPosDef_iff_Pos_Det_LeadMinors {M : Matrix n n R}
+{h : M.IsHermitian} : M.PosDef ↔ (∀ i : n , (M.leading_Minor i).det > 0) := by
   constructor
   · intro h1
-    apply pos_Det_PrinMinors_if_isPosDef
+    apply pos_Det_LeadMinors_if_isPosDef
     · exact h
     · exact h1
   · intro h2
-    apply isPosDef_if_pos_Det_PrinMinors
+    apply isPosDef_if_pos_Det_LeadMinors
     exact fun i ↦ h2 i
 
 end Matrix
 
 --hola
+--second try
