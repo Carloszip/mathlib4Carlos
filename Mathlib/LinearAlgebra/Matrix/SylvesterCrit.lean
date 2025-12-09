@@ -38,6 +38,8 @@ theorem isPosDef_if_Pos_Det_PrinMinors {M : Matrix n n R}
 theorem Pos_Det_PrinMinors_if_isPosDef {M : Matrix n n R}
 {h : M.IsHermitian} {hM : M.PosDef} : ∀ i : n , (M.prinMinor i).det > 0 := by sorry
 
+--test
+
 theorem isPosDef_iff_Pos_Det_PrinMinors {M : Matrix n n R}
 {h : M.IsHermitian} : M.PosDef ↔ (∀ i : n , (M.prinMinor i).det > 0) := by
   constructor
