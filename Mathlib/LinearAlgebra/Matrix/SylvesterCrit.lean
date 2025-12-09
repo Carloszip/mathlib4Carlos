@@ -31,6 +31,7 @@ variable {R : Type v} [CommRing R] [PartialOrder R] [StarRing R]
 variable {A : Matrix n n R}
 
 --test2
+--hi
 
 def leading_Minor (A : Matrix n n R) (i : n) : Matrix n n R := A --to do
 --this should be the leading minor of length i × i
