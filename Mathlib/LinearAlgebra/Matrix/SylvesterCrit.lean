@@ -32,7 +32,7 @@ variable {A : Matrix (Fin n) (Fin n) R}
 
 -- this is probably defined somewhere else
 def finCast (i : Fin n) : Fin i → Fin n :=
-fun k => ⟨k.1, lt_trans k.2 i.2⟩
+fun k => ⟨k.val, lt_trans k.isLt i.isLt⟩
 
 -- I wasnt able to define this without losing generality, so now n is just a natural number
 def leadingMinor (A : Matrix (Fin n) (Fin n) R) (i : Fin n) : Matrix (Fin i) (Fin i) R :=
@@ -47,14 +47,32 @@ theorem Pos_Det_leadingMinors_if_isPosDef {M : Matrix (Fin n) (Fin n) R}
   have : (M.leadingMinor i).PosDef := by
     unfold PosDef
     constructor
-    · sorry --leading minor is hermitian
+    · ext j k
+      exact IsHermitian.apply h ⟨↑j, finCast._proof_1 i j⟩ ⟨↑k, finCast._proof_1 i k⟩
+      --leading minor is hermitian
       --because M.leadingMinor i j = M i j = star (M j i) = star (M.leadingMinor j i)
     · intro x hx
-      let x2: Fin n → R := sorry -- x2 k = x k if k ≤ i, 0 if not
-      have hx2 : x2 ≠ 0 := by sorry
-      have : star x ⬝ᵥ M.leadingMinor i *ᵥ x = star x2 ⬝ᵥ M *ᵥ x2 := by sorry
-      rw [this]
-      exact hM.2 x2 hx2
+      let x2: Fin n →₀ R :=
+        { support := sorry --I dont know what this is (something to do with x.support)
+          toFun := fun k =>
+        if isLt : k.val < i then
+          x ⟨k.val, isLt⟩
+        else
+          0 -- x2 k = x k if k ≤ i, 0 if not
+          mem_support_toFun := sorry } --I also dont know what this is
+      have hx2 : x2 ≠ 0 := by
+        refine Finsupp.ne_iff.mpr ?_
+        rw [Finsupp.ne_iff] at hx
+        obtain ⟨a, ha⟩ := hx
+        use finCast i a
+        have : x2 (finCast i a) = x a := by exact dif_pos a.isLt
+        rw[this]
+        exact ha
+      have : (x.sum fun j xj ↦ x.sum fun k xk ↦ star xj * M.leadingMinor i j k * xk) =
+        (x2.sum fun j xj ↦ x2.sum fun k xk ↦ star xj * M j k * xk) := by sorry
+        --these definitions are always weird
+      rw[this]
+      exact hM.2 hx2
   sorry--posdef matrices have positive determinant.
 
 theorem isPosDef_iff_Pos_Det_leadingMinors {M : Matrix (Fin n) (Fin n) R}
