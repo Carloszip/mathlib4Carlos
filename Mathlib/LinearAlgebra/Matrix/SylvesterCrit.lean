@@ -42,6 +42,8 @@ def leadingMinor (A : Matrix (Fin n) (Fin n) R) (i : Fin n) : Matrix (Fin i) (Fi
 
 theorem isPosDef_if_Pos_Det_leadingMinors {M : Matrix (Fin n) (Fin n) R}
 {h : ∀ i : Fin n , (M.leadingMinor i).det > 0 } : M.PosDef := by sorry
+theorem isPosDef_if_Pos_Det_leadingMinors {M : Matrix (Fin n) (Fin n) R}
+{h : ∀ i : Fin n , (M.leadingMinor i).det > 0 } : M.PosDef := by sorry
 
 open scoped Classical in
 theorem Pos_Det_leadingMinors_if_isPosDef {M : Matrix (Fin n) (Fin n) R}
@@ -174,11 +176,16 @@ theorem isPosDef_iff_Pos_Det_leadingMinors {M : Matrix (Fin n) (Fin n) R}
   constructor
   · intro h1
     apply Pos_Det_leadingMinors_if_isPosDef
+    apply Pos_Det_leadingMinors_if_isPosDef
     · exact h
     · exact h1
   · intro h2
     apply isPosDef_if_Pos_Det_leadingMinors
+    apply isPosDef_if_Pos_Det_leadingMinors
     exact fun i ↦ h2 i
+
+
+end Matrix
 
 
 end Matrix
