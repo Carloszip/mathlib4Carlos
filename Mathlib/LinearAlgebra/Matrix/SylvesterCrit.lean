@@ -38,13 +38,13 @@ def finCast (i : Fin n) : Fin (i + 1) → Fin n :=
 fun k => ⟨k.val, Nat.lt_of_lt_of_le k.is_lt (Nat.succ_le_of_lt i.is_lt)⟩
 
 -- I wasnt able to define this without losing generality, so now n is just a natural number
-def leadingMinor (A : Matrix (Fin n) (Fin n) R) (i : Fin n) : Matrix (Fin (i + 1)) (Fin (i + 1)) R :=
-  A.submatrix (finCast i) (finCast i)
+def leadingMinor (A : Matrix (Fin n) (Fin n) R) (i : Fin n) :
+  Matrix (Fin (i + 1)) (Fin (i + 1)) R := A.submatrix (finCast i) (finCast i)
 
 theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R}
 (h : ∀ i : Fin n , (M.leadingMinor i).det > 0) : M.PosDef := by sorry
 
-lemma PosDef_leadingMinors_if_isPosDef {M : Matrix (Fin n) (Fin n) R}
+lemma PosDef_leadingMinor_if_isPosDef {M : Matrix (Fin n) (Fin n) R}
 (h : M.IsHermitian) (hM : M.PosDef) (i : Fin n) : (M.leadingMinor i).PosDef := by
   unfold PosDef
   constructor -- it is hermitian and blablabla
@@ -165,19 +165,14 @@ lemma PosDef_leadingMinors_if_isPosDef {M : Matrix (Fin n) (Fin n) R}
     rw[this]
     exact hM.2 hx2
 
-open scoped Classical in -- it is [done]
+open scoped Classical in -- [done]
 theorem Det_pos_leadingMinors_if_isPosDef {M : Matrix (Fin n) (Fin n) R}
 (h : M.IsHermitian) (hM : M.PosDef) : ∀ i : Fin n , (M.leadingMinor i).det > 0 := by
-  intro i
-  exact (PosDef_leadingMinors_if_isPosDef h hM i).det_pos -- posdef matrices have pos. det.
+  exact fun i => (PosDef_leadingMinor_if_isPosDef h hM i).det_pos -- posdef matrices have pos. det.
 
-theorem isPosDef_iff_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R}
+theorem isPosDef_iff_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} -- [done]
 {h : M.IsHermitian} : M.PosDef ↔ (∀ i : Fin n , (M.leadingMinor i).det > 0) := by
-  constructor
-  · intro h1
-    exact fun i ↦ Det_pos_leadingMinors_if_isPosDef h h1 i
-  · intro h2
-    exact isPosDef_if_Det_pos_leadingMinors h2
-
+  exact ⟨ fun h1 i => Det_pos_leadingMinors_if_isPosDef h h1 i,
+  fun h2 => isPosDef_if_Det_pos_leadingMinors h2⟩
 
 end Matrix
