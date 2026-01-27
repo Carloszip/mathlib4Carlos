@@ -39,6 +39,7 @@ variable {A : Matrix (Fin n) (Fin n) R}
 def leadingMinor (A : Matrix (Fin n) (Fin n) R) (i : ℕ) (hi : i ≤ n) :
   Matrix (Fin i) (Fin i) R := A.submatrix (Fin.castLE hi) (Fin.castLE hi)
 
+
 lemma PosDef_leadingMinor_if_isPosDef {M : Matrix (Fin n) (Fin n) R}
 (h : M.IsHermitian) (hM : M.PosDef) (i : ℕ) (hi : i ≤ n) : (M.leadingMinor i hi).PosDef := by
   unfold PosDef
@@ -156,38 +157,43 @@ lemma PosDef_leadingMinor_if_isPosDef {M : Matrix (Fin n) (Fin n) R}
     rw[this]
     exact hM.2 hx2
 
+
 open scoped Classical in -- [done]
 theorem Det_pos_leadingMinors_if_isPosDef {M : Matrix (Fin n) (Fin n) R}
 (h : M.IsHermitian) (hM : M.PosDef) :
 ∀ i : Fin (n+1) , (M.leadingMinor i (Fin.is_le i)).det > 0 := by
   exact fun i => (PosDef_leadingMinor_if_isPosDef h hM i (Fin.is_le i)).det_pos
 
-theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R}
-(h : ∀ i : Fin (n+1) , (M.leadingMinor i (Fin.is_le i)).det > 0) : M.PosDef := by
+
+theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.IsHermitian)
+(hM : ∀ i : Fin (n+1) , (M.leadingMinor i (Fin.is_le i)).det > 0) : M.PosDef := by
   induction n with
   | zero => -- kinda bloated but [done]
-      constructor
-      · exact isHermitian_iff_isSymmetric.mpr fun x ↦ congrFun rfl
-      · intro x hx
-        have : x = 0 := by
-          ext i
-          exact Fin.elim0 i
-        exact (hx this).elim
+    constructor
+    · exact h
+    · intro x hx
+      have : x = 0 := by
+        ext i
+        exact Fin.elim0 i
+      exact (hx this).elim
   | succ n ih => -- (._.) [not_done]
-      let Mn := M.leadingMinor n (Nat.le_add_right n 1) -- block decomposition
-      have hMn_pos : Mn.PosDef := by -- Mn is posdef
-        apply ih
-        intro i
-        have heq : (Mn.leadingMinor i (Fin.is_le i)) = (M.leadingMinor i (Fin.is_le')) := by
-          ext i j
-          unfold Mn leadingMinor Fin.castLE
-          simp only [submatrix_apply]
-        rw [heq]
-        exact h ⟨↑i, Nat.lt_add_right 1 (Fin.is_lt i)⟩
-      have hM_Det_pos : M.det > 0 := by -- det M is > 0
-        have : M = M.leadingMinor (n+1) (Nat.le_refl (n + 1)) := rfl
-        rw [this]
-        exact h ⟨n+1, lt_add_one (n + 1)⟩
+    let Mn := M.leadingMinor n (Nat.le_add_right n 1) -- block decomposition
+    have hMn_pos : Mn.PosDef := by -- Mn is posdef
+      have : Mn.IsHermitian := by
+        exact congrFun (congrFun (congrArg submatrix h) (Fin.castLE (Nat.le_add_right n 1)))
+            (Fin.castLE (Nat.le_add_right n 1))
+      apply ih this
+      intro i
+      have heq : (Mn.leadingMinor i (Fin.is_le i)) = (M.leadingMinor i (Fin.is_le')) := by
+        ext i j
+        unfold Mn leadingMinor Fin.castLE
+        simp only [submatrix_apply]
+      rw [heq]
+      exact hM ⟨↑i, Nat.lt_add_right 1 (Fin.is_lt i)⟩
+    have hM_Det_pos : M.det > 0 := by -- det M is > 0
+      have : M = M.leadingMinor (n+1) (Nat.le_refl (n + 1)) := rfl
+      rw [this]
+      exact hM ⟨n+1, lt_add_one (n + 1)⟩
 
       /- To do:
       approach with Schur complement (I believe this is hard)
@@ -206,11 +212,105 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R}
         ∘ contradiction
       • all eigenvalues are positive → M is Posdef-/
 
-      sorry
+    rw [IsHermitian.posDef_iff_eigenvalues_pos h] -- we must prove all eigenvalues are positive
+    have hdet : M.det = ∏ j, h.eigenvalues j := by -- det is the product of eigenvalues [done]
+        rw [h.det_eq_prod_eigenvalues]
+        simp only [RCLike.ofReal_real_eq_id, id_eq]
+    have hneq0: ∀ (i: Fin (n + 1)), h.eigenvalues i ≠ 0 := by -- no eigenvalue is 0 [done]
+      intro i
+      by_contra H
+      have : M.det = 0 := by
+        rw [hdet]
+        apply Finset.prod_eq_zero_iff.mpr
+        refine ⟨i, mem_univ i, H⟩
+      linarith
+
+    by_contra H -- by contradiction.
+    push_neg at H
+    obtain ⟨i, hi⟩ := H
+    have hi : h.eigenvalues i < 0 := Std.lt_of_le_of_ne hi (hneq0 i)
+
+    have hatmost2 : ¬∃ (u v : Fin (n+1) →₀ R), -- there cant be two different eigenvectors with
+    -- negative eigenvalue (dificult part) [not_done]
+      u ≠ 0 ∧ v ≠ 0 ∧ u ⬝ᵥ v = 0 ∧
+      (0 > u.sum fun i ui ↦ u.sum fun j uj ↦ star ui * M i j * uj) ∧
+      (0 > v.sum fun i vi ↦ v.sum fun j vj ↦ star vi * M i j * vj) := by
+        by_contra H
+        obtain ⟨u, v, hu, hv, huv, hu2, hv2⟩ := H
+        let un := u (Fin.last n)
+        let vn := v (Fin.last n)
+
+        let w_fun : Fin (n+1) → R := fun k => vn * u k - un * v k -- we construct w
+        let w : Fin (n+1) →₀ R := Finsupp.equivFunOnFinite.symm w_fun
+
+        have hwn : w (Fin.last n) = 0 := by -- last element is 0
+          simp [w, w_fun, un, vn]
+          ring
+
+        let pullfun : Fin (n+1) → Fin n := fun k => -- workaround [not_done]
+        if isLt : k.val < n then
+          ⟨k.val, isLt⟩
+        else
+          sorry
+        let w2sup : Finset (Fin n) := { -- we define the support
+          val := w.support.val.map pullfun
+          nodup := by
+            refine Multiset.Nodup.map ?_ ?_
+            · sorry
+            · exact w.support.nodup
+          }
+
+        let w2fun : Fin n → R := fun (k : Fin n) => -- the function
+           w ⟨k.val, Nat.lt_add_right 1 k.isLt⟩
+
+        let w2 : Fin n →₀ R := {
+          support := w2sup
+          toFun := w2fun
+          mem_support_toFun := sorry
+        }
+
+        sorry
+
+    have honlyone: ∀ (j : Fin (n + 1)), j ≠ i → 0 < h.eigenvalues j := by -- almost done [not_done]
+      by_contra H
+      push_neg at H
+      obtain ⟨j, hneq, hj⟩ := H
+      have hj : h.eigenvalues j < 0 := Std.lt_of_le_of_ne hj (hneq0 j)
+      -- Someone must check these defs [not_done]
+      let u_fun : Fin (n+1) → R := fun k => h.eigenvectorUnitary k i
+      let v_fun : Fin (n+1) → R := fun k => h.eigenvectorUnitary k j
+      let u : Fin (n+1) →₀ R := Finsupp.equivFunOnFinite.symm u_fun
+      let v : Fin (n+1) →₀ R := Finsupp.equivFunOnFinite.symm v_fun
+
+      have hu : u ≠ 0 := by sorry -- obviously [not_done]
+      have hv : v ≠ 0 := by sorry
+      have huv : u ⬝ᵥ v = 0 := by sorry
+      have hu2 : 0 > u.sum fun i ui ↦ u.sum fun j uj ↦ star ui * M i j * uj := by sorry
+      have hv2 : 0 > v.sum fun i vi ↦ v.sum fun j vj ↦ star vi * M i j * vj := by sorry
+
+      have : ∃ (u v : Fin (n+1) →₀ R), u ≠ 0 ∧ v ≠ 0 ∧ u ⬝ᵥ v = 0 ∧
+      (0 > u.sum fun i ui ↦ u.sum fun j uj ↦ star ui * M i j * uj) ∧
+      (0 > v.sum fun i vi ↦ v.sum fun j vj ↦ star vi * M i j * vj) := by
+        use u
+        use v
+      exact hatmost2 this
+
+    have : M.det < 0 := by -- if there is only one... [done]
+      rw [hdet]
+      have : h.eigenvalues i * ∏ j ∈ Finset.univ.erase i, h.eigenvalues j = ∏ j, h.eigenvalues j :=
+        Finset.mul_prod_erase Finset.univ h.eigenvalues (Finset.mem_univ i)
+      rw [←this]
+      have : ∏ j ∈ univ.erase i, h.eigenvalues j > 0 := by
+        apply Finset.prod_pos
+        intro j hj
+        exact honlyone j (ne_of_mem_erase hj)
+      exact mul_neg_of_neg_of_pos hi this
+    linarith
+
 
 theorem isPosDef_iff_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} -- [done]
 {h : M.IsHermitian} : M.PosDef ↔ (∀ i : Fin (n+1) , (M.leadingMinor i (Fin.is_le i)).det > 0) := by
   exact ⟨fun h1 i => Det_pos_leadingMinors_if_isPosDef h h1 i,
-  fun h2 => isPosDef_if_Det_pos_leadingMinors h2⟩
+  fun h2 => isPosDef_if_Det_pos_leadingMinors h h2⟩
 
 end Matrix
