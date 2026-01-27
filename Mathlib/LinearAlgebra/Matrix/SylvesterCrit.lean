@@ -33,13 +33,11 @@ variable {m n : ℕ}
 abbrev R := ℝ --we need RClike for posdef implies pos determinant, and partialorder for det>0
 variable {A : Matrix (Fin n) (Fin n) R}
 
--- this is probably defined somewhere else
-def finCast {i : ℕ} (hi : i ≤ n) : Fin i → Fin n :=
-fun k => ⟨k.val, Fin.val_lt_of_le k hi ⟩
+-- here rests Fin.cast RIP u_u
 
 -- I wasnt able to define this without losing generality, so now n is just a natural number
 def leadingMinor (A : Matrix (Fin n) (Fin n) R) (i : ℕ) (hi : i ≤ n) :
-  Matrix (Fin i) (Fin i) R := A.submatrix (finCast hi) (finCast hi)
+  Matrix (Fin i) (Fin i) R := A.submatrix (Fin.castLE hi) (Fin.castLE hi)
 
 lemma PosDef_leadingMinor_if_isPosDef {M : Matrix (Fin n) (Fin n) R}
 (h : M.IsHermitian) (hM : M.PosDef) (i : ℕ) (hi : i ≤ n) : (M.leadingMinor i hi).PosDef := by
@@ -52,9 +50,9 @@ lemma PosDef_leadingMinor_if_isPosDef {M : Matrix (Fin n) (Fin n) R}
   · intro x hx -- not so easy part [not_done]
     -- we define x2 as an extension of x
     let x2sup : Finset (Fin n) := { -- we define the support
-      val := x.support.val.map (fun j => finCast hi j)
+      val := x.support.val.map (fun j => Fin.castLE hi j)
       nodup := by
-        have hinj := injective_of_le_imp_le (fun j ↦ finCast hi j) fun {x y} a ↦ a
+        have hinj := injective_of_le_imp_le (fun j ↦ Fin.castLE hi j) fun {x y} a ↦ a
         exact Multiset.Nodup.map hinj x.support.nodup
       }
     let x2fun : Fin n → R := fun (k : Fin n) => -- the function
@@ -118,8 +116,8 @@ lemma PosDef_leadingMinor_if_isPosDef {M : Matrix (Fin n) (Fin n) R}
       refine Finsupp.ne_iff.mpr ?_
       rw [Finsupp.ne_iff] at hx
       obtain ⟨a, ha⟩ := hx
-      use finCast hi a
-      rw [show x2 (finCast hi a) = x a from dif_pos a.isLt]
+      use Fin.castLE hi a
+      rw [show x2 (Fin.castLE hi a) = x a from dif_pos a.isLt]
       exact ha
     -- the next part is really confusing (sorry :/ ) [not_done]
     -- this is by def of x2.support
@@ -128,8 +126,8 @@ lemma PosDef_leadingMinor_if_isPosDef {M : Matrix (Fin n) (Fin n) R}
         unfold leadingMinor
         simp only [Matrix.submatrix_apply]
         let f : Fin i ↪ Fin n :=  -- this should probably be outside
-          { toFun := finCast hi
-            inj' := injective_of_le_imp_le (finCast hi) fun {x y} a ↦ a
+          { toFun := Fin.castLE hi
+            inj' := injective_of_le_imp_le (Fin.castLE hi) fun {x y} a ↦ a
           }
         have h_supp : x2.support = x.support.map f := rfl
         unfold Finsupp.sum --now is just a sum :)
@@ -182,7 +180,7 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R}
         intro i
         have heq : (Mn.leadingMinor i (Fin.is_le i)) = (M.leadingMinor i (Fin.is_le')) := by
           ext i j
-          unfold Mn leadingMinor finCast
+          unfold Mn leadingMinor Fin.castLE
           simp only [submatrix_apply]
         rw [heq]
         exact h ⟨↑i, Nat.lt_add_right 1 (Fin.is_lt i)⟩
@@ -190,16 +188,24 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R}
         have : M = M.leadingMinor (n+1) (Nat.le_refl (n + 1)) := rfl
         rw [this]
         exact h ⟨n+1, lt_add_one (n + 1)⟩
-      have hMn_Det_pos : Mn.det > 0 := by -- det Mn is > 0
-        have : Mn = M.leadingMinor (n) (Nat.le_add_right n 1) := rfl
-        rw [this]
-        exact h ⟨n, by refine Nat.lt_add_right 1 (lt_add_one n)⟩
-      /- sketch
-       / Mn v \ this is our matrix
-       \ vt d /
 
-       by the determinant formula we obtain what we should.
-      -/
+      /- To do:
+      approach with Schur complement (I believe this is hard)
+
+      approach with Eigenvalues, probably easier
+      • M is Posdef iff all eigenvalues are positive
+      • Mn is Posdef → all eigenvalues are pos
+      • First: there is at most one negative eigenvalue
+        ∘ if there are two v, u, construct v_n u - u_n v
+        ∘ wt M w = wcut,t Mn wcut must be > 0
+        ∘ but wt M w = v_n² (ut M u) - u_n² (vt M v) < 0
+        ∘ contradiction
+      • Second: suppose there is one negative eigenvalue
+        ∘ det M = pos pos pos * neg = neg
+        ∘ but det M > 0
+        ∘ contradiction
+      • all eigenvalues are positive → M is Posdef-/
+
       sorry
 
 theorem isPosDef_iff_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} -- [done]
