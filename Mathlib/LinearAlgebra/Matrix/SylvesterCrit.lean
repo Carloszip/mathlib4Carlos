@@ -283,7 +283,7 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
       let u : Fin (n+1) →₀ R := Finsupp.equivFunOnFinite.symm ufun
       let v : Fin (n+1) →₀ R := Finsupp.equivFunOnFinite.symm vfun
 
-      have h_ortho : Orthonormal R h.eigenvectorBasis := h.eigenvectorBasis.orthonormal
+      have hortho : Orthonormal R h.eigenvectorBasis := h.eigenvectorBasis.orthonormal
 
       have hu : u ≠ 0 := by -- bloated [not_done]
         by_contra H
@@ -292,7 +292,7 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
         rw [show Finsupp.equivFunOnFinite 0 = 0 from rfl] at H
         have h0 : ufun = 0 := PiLp.ext (congrFun H)
         have : dotProduct (star ufun) ufun = 1 := by -- ufun · ufun = norm² = 1² = 1
-          have hnorm := h_ortho.1 i
+          have hnorm := hortho.1 i
           have : (1 : R) = 1 * 1 := by ring
           rw [this, ←hnorm, ←real_inner_self_eq_norm_mul_norm ufun]
           exact rfl
@@ -306,14 +306,15 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
         rw [show Finsupp.equivFunOnFinite 0 = 0 from rfl] at H
         have h0 : vfun = 0 := PiLp.ext (congrFun H)
         have : dotProduct (star vfun) vfun = 1 := by
-          have hnorm := h_ortho.1 j
+          have hnorm := hortho.1 j
           have : (1 : R) = 1 * 1 := by ring
           rw [this, ←hnorm, ←real_inner_self_eq_norm_mul_norm vfun]
           exact rfl
         rw [h0] at this
         simp only [WithLp.ofLp_zero, star_trivial, dotProduct_zero, zero_ne_one] at this
 
-      have huv : u ⬝ᵥ v = 0 := by sorry
+      have huv : u ⬝ᵥ v = 0 := hortho.2 hneq -- [done]
+
       have hu2 : 0 > u.sum fun i ui ↦ u.sum fun j uj ↦ star ui * M i j * uj := by sorry
       have hv2 : 0 > v.sum fun i vi ↦ v.sum fun j vj ↦ star vi * M i j * vj := by sorry
 
