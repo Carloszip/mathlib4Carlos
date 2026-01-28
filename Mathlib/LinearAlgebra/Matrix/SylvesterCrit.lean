@@ -276,14 +276,43 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
       push_neg at H
       obtain ⟨j, hneq, hj⟩ := H
       have hj : h.eigenvalues j < 0 := Std.lt_of_le_of_ne hj (hneq0 j)
-      -- Someone must check these defs [not_done]
-      let u_fun : Fin (n+1) → R := fun k => h.eigenvectorUnitary k i
-      let v_fun : Fin (n+1) → R := fun k => h.eigenvectorUnitary k j
-      let u : Fin (n+1) →₀ R := Finsupp.equivFunOnFinite.symm u_fun
-      let v : Fin (n+1) →₀ R := Finsupp.equivFunOnFinite.symm v_fun
 
-      have hu : u ≠ 0 := by sorry -- obviously [not_done]
-      have hv : v ≠ 0 := by sorry
+      -- Someone must check these defs [not_done]
+      let ufun := h.eigenvectorBasis i
+      let vfun := h.eigenvectorBasis j
+      let u : Fin (n+1) →₀ R := Finsupp.equivFunOnFinite.symm ufun
+      let v : Fin (n+1) →₀ R := Finsupp.equivFunOnFinite.symm vfun
+
+      have h_ortho : Orthonormal R h.eigenvectorBasis := h.eigenvectorBasis.orthonormal
+
+      have hu : u ≠ 0 := by -- bloated [not_done]
+        by_contra H
+        apply_fun Finsupp.equivFunOnFinite at H
+        simp only [apply_symm_apply, u] at H
+        rw [show Finsupp.equivFunOnFinite 0 = 0 from rfl] at H
+        have h0 : ufun = 0 := PiLp.ext (congrFun H)
+        have : dotProduct (star ufun) ufun = 1 := by -- ufun · ufun = norm² = 1² = 1
+          have hnorm := h_ortho.1 i
+          have : (1 : R) = 1 * 1 := by ring
+          rw [this, ←hnorm, ←real_inner_self_eq_norm_mul_norm ufun]
+          exact rfl
+        rw [h0] at this
+        simp only [WithLp.ofLp_zero, star_trivial, dotProduct_zero, zero_ne_one] at this
+
+      have hv : v ≠ 0 := by -- copy the one above [done]
+        by_contra H
+        apply_fun Finsupp.equivFunOnFinite at H
+        simp only [apply_symm_apply, v] at H
+        rw [show Finsupp.equivFunOnFinite 0 = 0 from rfl] at H
+        have h0 : vfun = 0 := PiLp.ext (congrFun H)
+        have : dotProduct (star vfun) vfun = 1 := by
+          have hnorm := h_ortho.1 j
+          have : (1 : R) = 1 * 1 := by ring
+          rw [this, ←hnorm, ←real_inner_self_eq_norm_mul_norm vfun]
+          exact rfl
+        rw [h0] at this
+        simp only [WithLp.ofLp_zero, star_trivial, dotProduct_zero, zero_ne_one] at this
+
       have huv : u ⬝ᵥ v = 0 := by sorry
       have hu2 : 0 > u.sum fun i ui ↦ u.sum fun j uj ↦ star ui * M i j * uj := by sorry
       have hv2 : 0 > v.sum fun i vi ↦ v.sum fun j vj ↦ star vi * M i j * vj := by sorry
