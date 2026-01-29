@@ -315,8 +315,115 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
 
       have huv : u ⬝ᵥ v = 0 := hortho.2 hneq -- [done]
 
-      have hu2 : 0 > u.sum fun i ui ↦ u.sum fun j uj ↦ star ui * M i j * uj := by sorry
-      have hv2 : 0 > v.sum fun i vi ↦ v.sum fun j vj ↦ star vi * M i j * vj := by sorry
+      have hu2 : 0 > u.sum fun i ui ↦ u.sum fun j uj ↦ star ui * M i j * uj := by
+        have hquad : u.sum (fun i ui => u.sum (fun j uj => star ui * M i j * uj))
+          = h.eigenvalues i * ‖(ufun)‖^2 := by
+
+          -- Gemini did this [not_done]
+          have h1 : (u.sum fun i ui ↦ u.sum fun j uj ↦ star ui * M i j * uj) =
+          u.sum (fun i ui => star ui * (M.mulVec ufun i)) := by
+            unfold Matrix.mulVec Finsupp.sum
+            simp only [star_trivial]
+            congr
+            ext a
+            simp_rw [mul_assoc]
+            rw [← Finset.mul_sum]
+            congr 1
+            unfold dotProduct
+            apply Finset.sum_subset (Finset.subset_univ _)
+            intro x hx1 hx2
+            rw [Finsupp.notMem_support_iff] at hx2
+            exact mul_eq_zero_of_right (M a x) hx2
+
+
+          have h2 : M.mulVec ufun = fun k => h.eigenvalues i * ufun k :=
+            h.mulVec_eigenvectorBasis i
+
+          have h3 : (u.sum fun i_1 ui ↦ star ui * (fun k ↦ h.eigenvalues i * ufun.ofLp k) i_1) =
+          h.eigenvalues i * u.sum (fun i ui => star ui * ui) := by
+            unfold Finsupp.sum
+            simp [Finset.mul_sum, mul_comm, mul_assoc]
+            congr
+
+          have hnorm : u.sum (fun i ui => star ui * ui) = ‖ufun‖^2 := by
+            unfold u Finsupp.sum
+            rw [Finset.sum_subset (Finset.subset_univ _)]
+            · rw [PiLp.norm_sq_eq_of_L2]
+              congr
+              ext x
+              simp
+              ring
+            · intro x hx1 hx2
+              simp only [Finsupp.equivFunOnFinite_symm_apply_support, Set.Finite.toFinset_setOf,
+                ne_eq, mem_filter, mem_univ, true_and, Decidable.not_not] at hx2
+              simp only [Finsupp.equivFunOnFinite_symm_apply_toFun, star_trivial, mul_eq_zero,
+                or_self]
+              exact hx2
+          rw [h1, h2, h3, hnorm]
+
+        rw[hquad]
+        have : ‖ufun‖ ^ 2 > 0 := by
+          have : ‖ufun‖ ≠ 0 := by
+            rw [hortho.1 i]
+            exact Ne.symm zero_ne_one
+          exact sq_pos_iff.mpr this
+        exact mul_neg_of_neg_of_pos hi this
+
+
+      have hv2 : 0 > v.sum fun i vi ↦ v.sum fun j vj ↦ star vi * M i j * vj := by
+      -- copy the one above [done]
+        have hquad : v.sum (fun i vi => v.sum (fun j vj => star vi * M i j * vj))
+          = h.eigenvalues j * ‖(vfun)‖^2 := by
+
+          -- Gemini did this [not_done]
+          have h1 : (v.sum fun i vi ↦ v.sum fun j vj ↦ star vi * M i j * vj) =
+          v.sum (fun i vi => star vi * (M.mulVec vfun i)) := by
+            unfold Matrix.mulVec Finsupp.sum
+            simp only [star_trivial]
+            congr
+            ext a
+            simp_rw [mul_assoc]
+            rw [← Finset.mul_sum]
+            congr 1
+            unfold dotProduct
+            apply Finset.sum_subset (Finset.subset_univ _)
+            intro x hx1 hx2
+            rw [Finsupp.notMem_support_iff] at hx2
+            exact mul_eq_zero_of_right (M a x) hx2
+
+
+          have h2 : M.mulVec vfun = fun k => h.eigenvalues j * vfun k :=
+            h.mulVec_eigenvectorBasis j
+
+          have h3 : (v.sum fun i_1 vi ↦ star vi * (fun k ↦ h.eigenvalues j * vfun.ofLp k) i_1) =
+          h.eigenvalues j * v.sum (fun i vi => star vi * vi) := by
+            unfold Finsupp.sum
+            simp [Finset.mul_sum, mul_comm, mul_assoc]
+            congr
+
+          have hnorm : v.sum (fun i vi => star vi * vi) = ‖vfun‖^2 := by
+            unfold v Finsupp.sum
+            rw [Finset.sum_subset (Finset.subset_univ _)]
+            · rw [PiLp.norm_sq_eq_of_L2]
+              congr
+              ext x
+              simp
+              ring
+            · intro x hx1 hx2
+              simp only [Finsupp.equivFunOnFinite_symm_apply_support, Set.Finite.toFinset_setOf,
+                ne_eq, mem_filter, mem_univ, true_and, Decidable.not_not] at hx2
+              simp only [Finsupp.equivFunOnFinite_symm_apply_toFun, star_trivial, mul_eq_zero,
+                or_self]
+              exact hx2
+          rw [h1, h2, h3, hnorm]
+
+        rw[hquad]
+        have : ‖vfun‖ ^ 2 > 0 := by
+          have : ‖vfun‖ ≠ 0 := by
+            rw [hortho.1 j]
+            exact Ne.symm zero_ne_one
+          exact sq_pos_iff.mpr this
+        exact mul_neg_of_neg_of_pos hj this
 
       have : ∃ (u v : Fin (n+1) →₀ R), u ≠ 0 ∧ v ≠ 0 ∧ u ⬝ᵥ v = 0 ∧
       (0 > u.sum fun i ui ↦ u.sum fun j uj ↦ star ui * M i j * uj) ∧
