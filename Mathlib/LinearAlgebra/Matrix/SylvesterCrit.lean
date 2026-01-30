@@ -176,7 +176,7 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
         ext i
         exact Fin.elim0 i
       exact (hx this).elim
-  | succ n ih => -- (._.) [not_done]
+    | succ n ih => -- (._.) [not_done]
     let Mn := M.leadingMinor n (Nat.le_add_right n 1) -- block decomposition
     have hMn_pos : Mn.PosDef := by -- Mn is posdef
       have : Mn.IsHermitian := by
@@ -230,90 +230,18 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
     obtain ⟨i, hi⟩ := H
     have hi : h.eigenvalues i < 0 := Std.lt_of_le_of_ne hi (hneq0 i)
 
-    have hatmost2 : ¬∃ (u v : Fin (n+1) →₀ R), -- there cant be two different eigenvectors with
-    -- negative eigenvalue (dificult part) [not_done]
-      u ≠ 0 ∧ v ≠ 0 ∧ u ⬝ᵥ v = 0 ∧
-      (0 > u.sum fun i ui ↦ u.sum fun j uj ↦ star ui * M i j * uj) ∧
-      (0 > v.sum fun i vi ↦ v.sum fun j vj ↦ star vi * M i j * vj) := by
-        by_contra H
-        obtain ⟨u, v, hu, hv, huv, hu2, hv2⟩ := H
-        let un := u (Fin.last n)
-        let vn := v (Fin.last n)
-
-        let w_fun : Fin (n+1) → R := fun k => vn * u k - un * v k -- we construct w
-        let w : Fin (n+1) →₀ R := Finsupp.equivFunOnFinite.symm w_fun
-
-        have hwn : w (Fin.last n) = 0 := by -- last element is 0
-          simp [w, w_fun, un, vn]
-          ring
-
-        let pullfun : Fin (n+1) → Fin n := fun k => -- workaround [not_done]
-        if isLt : k.val < n then
-          ⟨k.val, isLt⟩
-        else
-          sorry
-        let w2sup : Finset (Fin n) := { -- we define the support
-          val := w.support.val.map pullfun
-          nodup := by
-            refine Multiset.Nodup.map ?_ ?_
-            · sorry
-            · exact w.support.nodup
-          }
-
-        let w2fun : Fin n → R := fun (k : Fin n) => -- the function
-           w ⟨k.val, Nat.lt_add_right 1 k.isLt⟩
-
-        let w2 : Fin n →₀ R := {
-          support := w2sup
-          toFun := w2fun
-          mem_support_toFun := sorry
-        }
-
-        sorry
-
-    have honlyone: ∀ (j : Fin (n + 1)), j ≠ i → 0 < h.eigenvalues j := by -- almost done [not_done]
+    have hnot2 : ¬∃ j, j ≠ i ∧ h.eigenvalues j < 0 := by
       by_contra H
-      push_neg at H
-      obtain ⟨j, hneq, hj⟩ := H
-      have hj : h.eigenvalues j < 0 := Std.lt_of_le_of_ne hj (hneq0 j)
+      obtain ⟨j, hne, hj⟩ := H
 
-      -- Someone must check these defs [not_done]
-      let ufun := h.eigenvectorBasis i
+      let ufun := h.eigenvectorBasis i -- defining u and v
       let vfun := h.eigenvectorBasis j
       let u : Fin (n+1) →₀ R := Finsupp.equivFunOnFinite.symm ufun
       let v : Fin (n+1) →₀ R := Finsupp.equivFunOnFinite.symm vfun
+      let un := u (Fin.last n)
+      let vn := v (Fin.last n)
 
       have hortho : Orthonormal R h.eigenvectorBasis := h.eigenvectorBasis.orthonormal
-
-      have hu : u ≠ 0 := by -- bloated [not_done]
-        by_contra H
-        apply_fun Finsupp.equivFunOnFinite at H
-        simp only [apply_symm_apply, u] at H
-        rw [show Finsupp.equivFunOnFinite 0 = 0 from rfl] at H
-        have h0 : ufun = 0 := PiLp.ext (congrFun H)
-        have : dotProduct (star ufun) ufun = 1 := by -- ufun · ufun = norm² = 1² = 1
-          have hnorm := hortho.1 i
-          have : (1 : R) = 1 * 1 := by ring
-          rw [this, ←hnorm, ←real_inner_self_eq_norm_mul_norm ufun]
-          exact rfl
-        rw [h0] at this
-        simp only [WithLp.ofLp_zero, star_trivial, dotProduct_zero, zero_ne_one] at this
-
-      have hv : v ≠ 0 := by -- copy the one above [done]
-        by_contra H
-        apply_fun Finsupp.equivFunOnFinite at H
-        simp only [apply_symm_apply, v] at H
-        rw [show Finsupp.equivFunOnFinite 0 = 0 from rfl] at H
-        have h0 : vfun = 0 := PiLp.ext (congrFun H)
-        have : dotProduct (star vfun) vfun = 1 := by
-          have hnorm := hortho.1 j
-          have : (1 : R) = 1 * 1 := by ring
-          rw [this, ←hnorm, ←real_inner_self_eq_norm_mul_norm vfun]
-          exact rfl
-        rw [h0] at this
-        simp only [WithLp.ofLp_zero, star_trivial, dotProduct_zero, zero_ne_one] at this
-
-      have huv : u ⬝ᵥ v = 0 := hortho.2 hneq -- [done]
 
       have hu2 : 0 > u.sum fun i ui ↦ u.sum fun j uj ↦ star ui * M i j * uj := by
         have hquad : u.sum (fun i ui => u.sum (fun j uj => star ui * M i j * uj))
@@ -321,7 +249,7 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
 
           -- Gemini did this [not_done]
           have h1 : (u.sum fun i ui ↦ u.sum fun j uj ↦ star ui * M i j * uj) =
-          u.sum (fun i ui => star ui * (M.mulVec ufun i)) := by
+            u.sum (fun i ui => star ui * (M.mulVec ufun i)) := by
             unfold Matrix.mulVec Finsupp.sum
             simp only [star_trivial]
             congr
@@ -340,7 +268,7 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
             h.mulVec_eigenvectorBasis i
 
           have h3 : (u.sum fun i_1 ui ↦ star ui * (fun k ↦ h.eigenvalues i * ufun.ofLp k) i_1) =
-          h.eigenvalues i * u.sum (fun i ui => star ui * ui) := by
+            h.eigenvalues i * u.sum (fun i ui => star ui * ui) := by
             unfold Finsupp.sum
             simp [Finset.mul_sum, mul_comm, mul_assoc]
             congr
@@ -377,7 +305,7 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
 
           -- Gemini did this [not_done]
           have h1 : (v.sum fun i vi ↦ v.sum fun j vj ↦ star vi * M i j * vj) =
-          v.sum (fun i vi => star vi * (M.mulVec vfun i)) := by
+            v.sum (fun i vi => star vi * (M.mulVec vfun i)) := by
             unfold Matrix.mulVec Finsupp.sum
             simp only [star_trivial]
             congr
@@ -425,12 +353,84 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
           exact sq_pos_iff.mpr this
         exact mul_neg_of_neg_of_pos hj this
 
-      have : ∃ (u v : Fin (n+1) →₀ R), u ≠ 0 ∧ v ≠ 0 ∧ u ⬝ᵥ v = 0 ∧
-      (0 > u.sum fun i ui ↦ u.sum fun j uj ↦ star ui * M i j * uj) ∧
-      (0 > v.sum fun i vi ↦ v.sum fun j vj ↦ star vi * M i j * vj) := by
-        use u
-        use v
-      exact hatmost2 this
+      have hu : u ≠ 0 := by -- bloated [not_done]
+        by_contra H
+        apply_fun Finsupp.equivFunOnFinite at H
+        simp only [apply_symm_apply, u] at H
+        rw [show Finsupp.equivFunOnFinite 0 = 0 from rfl] at H
+        have h0 : ufun = 0 := PiLp.ext (congrFun H)
+        have : dotProduct (star ufun) ufun = 1 := by -- ufun · ufun = norm² = 1² = 1
+          have hnorm := hortho.1 i
+          have : (1 : R) = 1 * 1 := by ring
+          rw [this, ←hnorm, ←real_inner_self_eq_norm_mul_norm ufun]
+          exact rfl
+        rw [h0] at this
+        simp only [WithLp.ofLp_zero, star_trivial, dotProduct_zero, zero_ne_one] at this
+
+      have hv : v ≠ 0 := by -- copy the one above [done]
+        by_contra H
+        apply_fun Finsupp.equivFunOnFinite at H
+        simp only [apply_symm_apply, v] at H
+        rw [show Finsupp.equivFunOnFinite 0 = 0 from rfl] at H
+        have h0 : vfun = 0 := PiLp.ext (congrFun H)
+        have : dotProduct (star vfun) vfun = 1 := by
+          have hnorm := hortho.1 j
+          have : (1 : R) = 1 * 1 := by ring
+          rw [this, ←hnorm, ←real_inner_self_eq_norm_mul_norm vfun]
+          exact rfl
+        rw [h0] at this
+        simp only [WithLp.ofLp_zero, star_trivial, dotProduct_zero, zero_ne_one] at this
+
+      let wfun : Fin (n+1) → R := fun k ↦ vn * u k - un * v k
+      let w := Finsupp.equivFunOnFinite.symm wfun -- we define w like this
+
+      have hwn : w (Fin.last n) = 0 := by -- last element is 0
+        simp [w, wfun, un, vn]
+        ring
+
+      have hw0 : w ≠ 0 := by sorry -- this is harder than expected [not_done]
+
+      have hwn : w (Fin.last n) = 0 := by -- last element is 0
+        simp [w, wfun, un, vn]
+        ring
+
+      have h_pos : 0 < (w.sum fun i wi ↦ w.sum fun j wj ↦ star wi * M i j * wj) := by
+        let f := (Fin.castLE (Nat.le_succ n))
+
+        have hinj : Set.InjOn f (f⁻¹' ↑w.support) := by sorry
+        -- Im not even sure if this is a correct definition [not_done]
+
+        let w2 : Fin n →₀ ℝ := w.comapDomain f hinj
+
+        have heq : (w.sum fun i wi ↦ w.sum fun j wj ↦ star wi * M i j * wj) =
+          (w2.sum fun i w2i ↦ w2.sum fun j w2j ↦ star w2i * Mn i j * w2j) := by
+          unfold Finsupp.sum w2
+          simp
+          sorry
+
+        have hw20 : w2 ≠ 0 := by sorry -- this should be easy [not_done]
+
+        rw [heq]
+        exact hMn_pos.2 hw20
+
+      have h_neg : (w.sum fun i wi ↦ w.sum fun j wj ↦ star wi * M i j * wj) ≤ 0 := by
+        -- just sums [not_done]
+        have heq : (w.sum fun i wi ↦ w.sum fun j wj ↦ star wi * M i j * wj) =
+          vn^2 * (u.sum fun i ui ↦ u.sum fun j uj ↦ star ui * M i j * uj) +
+          un^2 * (v.sum fun i vi ↦ v.sum fun j vj ↦ star vi * M i j * vj) := by sorry
+
+        rw [heq]
+        nlinarith
+
+      linarith
+
+    have honlyone: ∀ (j : Fin (n + 1)), j ≠ i → 0 < h.eigenvalues j := by -- [done]
+      by_contra H
+      push_neg at H
+      obtain ⟨j, hneq, hj⟩ := H
+      have hj : h.eigenvalues j < 0 := Std.lt_of_le_of_ne hj (hneq0 j)
+      have hthereis2 : ∃ j, j ≠ i ∧ h.eigenvalues j < 0 := by use j
+      exact hnot2 hthereis2
 
     have : M.det < 0 := by -- if there is only one... [done]
       rw [hdet]
