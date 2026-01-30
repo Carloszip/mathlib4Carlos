@@ -19,6 +19,7 @@ public import Mathlib.LinearAlgebra.Matrix.PosDef
 public import Mathlib.Analysis.Matrix.PosDef
 public import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
 public import Mathlib.Algebra.Order.Field.Defs
+public import Mathlib.Algebra.BigOperators.Fin
 
 @[expose] public section
 
@@ -390,25 +391,54 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
 
       have hw0 : w ≠ 0 := by sorry -- this is harder than expected [not_done]
 
-      have hwn : w (Fin.last n) = 0 := by -- last element is 0
+      have hwn : w (Fin.last n) = 0 := by -- last element is 0 [done]
         simp [w, wfun, un, vn]
         ring
 
       have h_pos : 0 < (w.sum fun i wi ↦ w.sum fun j wj ↦ star wi * M i j * wj) := by
         let f := (Fin.castLE (Nat.le_succ n))
 
-        have hinj : Set.InjOn f (f⁻¹' ↑w.support) := by sorry
-        -- Im not even sure if this is a correct definition [not_done]
+        -- trivial [done]
+        have hinj : Set.InjOn f (f⁻¹' ↑w.support) := by
+          intro x hx y hy heq
+          apply Fin.castLE_injective
+          exact heq
 
         let w2 : Fin n →₀ ℝ := w.comapDomain f hinj
 
+        -- this looks so bad [not_done]
         have heq : (w.sum fun i wi ↦ w.sum fun j wj ↦ star wi * M i j * wj) =
           (w2.sum fun i w2i ↦ w2.sum fun j w2j ↦ star w2i * Mn i j * w2j) := by
-          unfold Finsupp.sum w2
-          simp
-          sorry
+          rw [Finsupp.sum_fintype]
+          · rw [Finsupp.sum_fintype]
+            · rw [Fin.sum_univ_castSucc, Finsupp.sum_fintype]
+              · simp only [hwn, star_zero, zero_mul, Finset.sum_const_zero, add_zero]
+                congr
+                ext a
+                simp only [star_trivial, mul_zero, implies_true, Finsupp.sum_fintype]
+                rw [Fin.sum_univ_castSucc]
+                simp only [hwn, mul_zero, add_zero]
+                congr
+              · intro b
+                exact mul_zero (star (w (Fin.last n)) * M (Fin.last n) b)
+            · intro c
+              simp only [ star_zero, zero_mul]
+              exact Finsupp.sum_zero
+          · intro d
+            simp only [ star_zero, zero_mul]
+            exact Finsupp.sum_zero
 
-        have hw20 : w2 ≠ 0 := by sorry -- this should be easy [not_done]
+        have hw20 : w2 ≠ 0 := by -- this is ok [done]
+          by_contra H
+          apply hw0
+          ext k
+          by_cases hk : k = Fin.last n
+          · rw [hk]
+            (expose_names; exact hwn_1)
+          · let j : Fin n := ⟨k.val, Fin.val_lt_last hk⟩
+            have : w2 j = 0 := by simp_rw[H] ; rfl
+            rw [Finsupp.comapDomain_apply] at this
+            exact this
 
         rw [heq]
         exact hMn_pos.2 hw20
