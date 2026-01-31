@@ -20,6 +20,7 @@ public import Mathlib.Analysis.Matrix.PosDef
 public import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
 public import Mathlib.Algebra.Order.Field.Defs
 public import Mathlib.Algebra.BigOperators.Fin
+public import Mathlib.Data.Finsupp.Defs
 
 @[expose] public section
 
@@ -177,8 +178,8 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
         ext i
         exact Fin.elim0 i
       exact (hx this).elim
-    | succ n ih => -- (._.) [not_done]
-    let Mn := M.leadingMinor n (Nat.le_add_right n 1) -- block decomposition
+  | succ n ih => -- (._.) [not_done]
+    let Mn := M.leadingMinor n (Nat.le_add_right n 1)
     have hMn_pos : Mn.PosDef := by -- Mn is posdef
       have : Mn.IsHermitian := by
         exact congrFun (congrFun (congrArg submatrix h) (Fin.castLE (Nat.le_add_right n 1)))
@@ -196,22 +197,22 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
       rw [this]
       exact hM ⟨n+1, lt_add_one (n + 1)⟩
 
-      /- To do:
-      approach with Schur complement (I believe this is hard)
+    /- To do:
+    approach with Schur complement (I believe this is hard)
 
-      approach with Eigenvalues, probably easier
-      • M is Posdef iff all eigenvalues are positive
-      • Mn is Posdef → all eigenvalues are pos
-      • First: there is at most one negative eigenvalue
-        ∘ if there are two v, u, construct v_n u - u_n v
-        ∘ wt M w = wcut,t Mn wcut must be > 0
-        ∘ but wt M w = v_n² (ut M u) - u_n² (vt M v) < 0
-        ∘ contradiction
-      • Second: suppose there is one negative eigenvalue
-        ∘ det M = pos pos pos * neg = neg
-        ∘ but det M > 0
-        ∘ contradiction
-      • all eigenvalues are positive → M is Posdef-/
+    approach with Eigenvalues, probably easier
+    • M is Posdef iff all eigenvalues are positive
+    • Mn is Posdef → all eigenvalues are pos
+    • First: there is at most one negative eigenvalue
+      ∘ if there are two v, u, construct v_n u - u_n v
+      ∘ wt M w = wcut,t Mn wcut must be > 0
+      ∘ but wt M w = v_n² (ut M u) - u_n² (vt M v) < 0
+      ∘ contradiction
+    • Second: suppose there is one negative eigenvalue
+      ∘ det M = pos pos pos * neg = neg
+      ∘ but det M > 0
+      ∘ contradiction
+    • all eigenvalues are positive → M is Posdef-/
 
     rw [IsHermitian.posDef_iff_eigenvalues_pos h] -- we must prove all eigenvalues are positive
     have hdet : M.det = ∏ j, h.eigenvalues j := by -- det is the product of eigenvalues [done]
@@ -389,7 +390,102 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
         simp [w, wfun, un, vn]
         ring
 
-      have hw0 : w ≠ 0 := by sorry -- this is harder than expected [not_done]
+      have hw0 : w ≠ 0 := by -- this is harder than expected [not_done]
+        by_contra H -- by contradiction
+        unfold w wfun at H
+        have huv: vn • u - un • v = 0 := by
+          rw [← H]
+          ext k
+          simp
+        by_cases hun: un ≠ 0
+        · have hv' : v = (vn/un) • u := by -- if un ≠ 0 we can divide
+            have : un • v = vn • u := (sub_eq_zero.mp huv).symm
+            calc v = (un⁻¹) • (un • v) := Eq.symm (inv_smul_smul₀ hun v)
+              _ = (un⁻¹) • (vn • u) := congrArg (HSMul.hSMul un⁻¹) this
+              _ = (un⁻¹ * vn) • u := smul_smul un⁻¹ vn u
+              _ = (vn/un) • u := by congr 1; exact inv_mul_eq_div un vn
+          have hv : vfun = (vn/un) • ufun := by
+            -- we obtain that the two vectors are parallel
+            -- and that cant be since they are orthogonal
+            unfold u v at hv'
+            simp only at hv'
+            apply_fun Finsupp.equivFunOnFinite at hv'
+            unfold ufun vfun at hv' ⊢
+            simp only [apply_symm_apply] at hv'
+            ext k
+            rw[hv']
+            simp
+          have hdot := hortho.2 hne.symm
+          simp only at hdot
+          unfold vfun ufun at hv
+          rw [hv, inner_smul_right] at hdot
+          rw [inner_self_eq_norm_sq_to_K, hortho.1 i] at hdot
+          rw [← RCLike.ofReal_pow 1 2, one_pow 2] at hdot
+          simp only [RCLike.ofReal_real_eq_id, id_eq, mul_one,
+            div_eq_zero_iff, hun, or_false] at hdot
+          rw [hdot, zero_div un, zero_smul] at hv
+          have h_norm := hortho.1 j
+          rw [hv] at h_norm
+          simp at h_norm
+
+        · unfold un at hun
+          push_neg at hun
+
+          -- the following argument says that if the last component of a (eigen)vector u is 0
+          -- then ut M u > 0
+          -- it is later used again and I believe it should be a lemma somewhere
+          have h_pos : 0 < (u.sum fun i ui ↦ u.sum fun j uj ↦ star ui * M i j * uj) := by
+            let f := (Fin.castLE (Nat.le_succ n))
+
+            -- trivial [done]
+            have hinj : Set.InjOn f (f⁻¹' ↑u.support) := by
+              intro x hx y hy heq
+              apply Fin.castLE_injective
+              exact heq
+
+            let u2 : Fin n →₀ ℝ := u.comapDomain f hinj
+
+            -- this looks so bad [not_done]
+            -- ut M u = u2t Mn u2
+            have heq : (u.sum fun i ui ↦ u.sum fun j uj ↦ star ui * M i j * uj) =
+              (u2.sum fun i u2i ↦ u2.sum fun j u2j ↦ star u2i * Mn i j * u2j) := by
+              rw [Finsupp.sum_fintype]
+              · rw [Finsupp.sum_fintype]
+                · rw [Fin.sum_univ_castSucc, Finsupp.sum_fintype]
+                  · simp only [hun, star_zero, zero_mul, Finset.sum_const_zero, add_zero]
+                    congr
+                    ext a
+                    simp only [star_trivial, mul_zero, implies_true, Finsupp.sum_fintype]
+                    rw [Fin.sum_univ_castSucc]
+                    simp only [hun, mul_zero, add_zero]
+                    congr
+                  · intro b
+                    exact mul_zero (star (u (Fin.last n)) * M (Fin.last n) b)
+                · intro c
+                  simp only [star_zero, zero_mul]
+                  exact Finsupp.sum_zero
+              · intro d
+                simp only [star_zero, zero_mul]
+                exact Finsupp.sum_zero
+
+            have hu20 : u2 ≠ 0 := by -- this is ok [done]
+              by_contra H
+              apply hu
+              ext k
+              by_cases hk : k = Fin.last n
+              · rw [hk]
+                simp only [Finsupp.coe_zero, Pi.zero_apply]
+                rw [hun]
+              · let j : Fin n := ⟨k.val, Fin.val_lt_last hk⟩
+                have : u2 j = 0 := by simp_rw[H] ; rfl
+                rw [Finsupp.comapDomain_apply] at this
+                exact this
+
+            rw [heq]
+            exact hMn_pos.2 hu20
+
+          linarith
+
 
       have hwn : w (Fin.last n) = 0 := by -- last element is 0 [done]
         simp [w, wfun, un, vn]
@@ -422,10 +518,10 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
               · intro b
                 exact mul_zero (star (w (Fin.last n)) * M (Fin.last n) b)
             · intro c
-              simp only [ star_zero, zero_mul]
+              simp only [star_zero, zero_mul]
               exact Finsupp.sum_zero
           · intro d
-            simp only [ star_zero, zero_mul]
+            simp only [star_zero, zero_mul]
             exact Finsupp.sum_zero
 
         have hw20 : w2 ≠ 0 := by -- this is ok [done]
@@ -434,7 +530,8 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
           ext k
           by_cases hk : k = Fin.last n
           · rw [hk]
-            (expose_names; exact hwn_1)
+            simp only [Finsupp.coe_zero, Pi.zero_apply]
+            rw [hwn]
           · let j : Fin n := ⟨k.val, Fin.val_lt_last hk⟩
             have : w2 j = 0 := by simp_rw[H] ; rfl
             rw [Finsupp.comapDomain_apply] at this
@@ -447,7 +544,122 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
         -- just sums [not_done]
         have heq : (w.sum fun i wi ↦ w.sum fun j wj ↦ star wi * M i j * wj) =
           vn^2 * (u.sum fun i ui ↦ u.sum fun j uj ↦ star ui * M i j * uj) +
-          un^2 * (v.sum fun i vi ↦ v.sum fun j vj ↦ star vi * M i j * vj) := by sorry
+          un^2 * (v.sum fun i vi ↦ v.sum fun j vj ↦ star vi * M i j * vj) := by
+
+          have h1 : -- this should be a lemma and it will make things easier everywhere [IMPORTANT]
+            (w.sum fun i wi ↦ w.sum fun j wj ↦ star wi * M i j * wj) =
+            ∑ i : Fin (n+1), ∑ j : Fin (n+1), star (w i) * M i j * (w j) := by
+            rw [Finsupp.sum_fintype]
+            · apply Finset.sum_congr rfl
+              intro i hi
+              rw [Finsupp.sum_fintype]
+              · intro a ; simp
+            · intro b ; simp
+
+          have h2 :
+            (∑ i, ∑ j, star (w i) * M i j * (w j)) =
+            (vn^2 * ∑ i, ∑ j, star (u i) * M i j * (u j)) -
+            (vn * un * ∑ i, ∑ j, star (u i) * M i j * (v j)) -
+            (un * vn * ∑ i, ∑ j, star (v i) * M i j * (u j)) +
+            (un^2 * ∑ i, ∑ j, star (v i) * M i j * (v j)) := by
+            simp only [Finsupp.equivFunOnFinite_symm_apply_toFun, star_trivial, w, wfun]
+            simp only [mul_sub, sub_mul, Finset.sum_sub_distrib, Finset.mul_sum, pow_two]
+            have hmul1 : ∀ x x_1 : Fin (n+1), vn * u x * M x x_1 * (vn * u x_1) =
+              vn * vn * (u x * M x x_1 * u x_1) := by
+              intro x x_1
+              ring_nf
+            have hmul2 : ∀ x x_1 : Fin (n+1), un * v x * M x x_1 * (un * v x_1) =
+              un * un * (v x * M x x_1 * v x_1) := by
+              intro x x_1
+              ring_nf
+            have hmul3 : ∀ x x_1 : Fin (n+1), un * v x * M x x_1 * (vn * u x_1) =
+              un * vn * (v x * M x x_1 * u x_1) := by
+              intro x x_1
+              ring_nf
+            have hmul4 : ∀ x x_1 : Fin (n+1), vn * u x * M x x_1 * (un * v x_1) =
+              vn * un * (u x * M x x_1 * v x_1) := by
+              intro x x_1
+              ring_nf
+            simp [hmul1, hmul2, hmul3, hmul4]
+            ring
+
+          have h3 :
+            (vn * un * ∑ i, ∑ j, star (u i) * M i j * (v j)) = 0 ∧
+            (un * vn * ∑ i, ∑ j, star (v i) * M i j * (u j)) = 0 := by
+            constructor
+            · apply mul_eq_zero_of_right
+
+              have horth' : ∑ i, vfun.ofLp i * u i = 0 := by
+                simp only [u, Finsupp.coe_equivFunOnFinite_symm]
+                have hort := hortho.2 hne.symm
+                simp only at hort
+                rw [PiLp.inner_apply] at hort
+                rw[← hort]
+                unfold ufun vfun
+                congr
+
+              have ht : (∑ i, ∑ j, star (u i) * M i j * v j) =
+                ∑ i, star (u i) * (M.mulVec vfun i) := by
+                unfold Matrix.mulVec dotProduct
+                simp_rw [Finset.mul_sum]
+                simp_rw [mul_assoc]
+                congr
+
+              have hMv : M.mulVec vfun = fun k => h.eigenvalues j * vfun k := by
+                simpa using h.mulVec_eigenvectorBasis j
+              rw [ht]
+              simp only [star_trivial, hMv]
+              simp only [mul_comm, mul_assoc, ← mul_sum, mul_eq_zero]
+              right
+              exact horth'
+
+            · apply mul_eq_zero_of_right
+
+              have horth' : ∑ i, ufun.ofLp i * v i = 0 := by
+                simp only [v, Finsupp.coe_equivFunOnFinite_symm]
+                have hort := hortho.2 hne
+                simp only at hort
+                rw [PiLp.inner_apply] at hort
+                rw[← hort]
+                unfold ufun vfun
+                congr
+
+              have ht : (∑ i, ∑ j, star (v i) * M i j * u j) =
+                ∑ i, star (v i) * (M.mulVec ufun i) := by
+                unfold Matrix.mulVec dotProduct
+                simp_rw [Finset.mul_sum]
+                simp_rw [mul_assoc]
+                congr
+
+              have hMv : M.mulVec ufun = fun k => h.eigenvalues i * ufun k := by
+                simpa using h.mulVec_eigenvectorBasis i
+              rw [ht]
+              simp only [star_trivial, hMv]
+              simp only [mul_comm, mul_assoc, ← mul_sum, mul_eq_zero]
+              right
+              exact horth'
+
+          rw [h1, h2]
+          rw [h3.1, h3.2]
+          simp only [sub_zero]
+          have h4 : (u.sum fun i ui ↦ u.sum fun j uj ↦ star ui * M i j * uj) =
+            ∑ i : Fin (n+1), ∑ j : Fin (n+1), star (u i) * M i j * (u j) := by
+            rw [Finsupp.sum_fintype]
+            · apply Finset.sum_congr rfl
+              intro i hi
+              rw [Finsupp.sum_fintype]
+              · intro a ; simp
+            · intro b ; simp
+          have h5 : (v.sum fun i vi ↦ v.sum fun j vj ↦ star vi * M i j * vj) =
+            ∑ i : Fin (n+1), ∑ j : Fin (n+1), star (v i) * M i j * (v j) := by
+            rw [Finsupp.sum_fintype]
+            · apply Finset.sum_congr rfl
+              intro i hi
+              rw [Finsupp.sum_fintype]
+              · intro a ; simp
+            · intro b ; simp
+          rw [h4, h5]
+
 
         rw [heq]
         nlinarith
