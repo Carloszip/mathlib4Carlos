@@ -1,26 +1,6 @@
 module
 
-public import Mathlib.Algebra.CharP.Invertible
-public import Mathlib.Algebra.Order.Ring.Star
-public import Mathlib.Data.Real.Star
-public import Mathlib.LinearAlgebra.Matrix.DotProduct
-public import Mathlib.LinearAlgebra.Matrix.Hermitian
-public import Mathlib.LinearAlgebra.Matrix.Vec
-public import Mathlib.LinearAlgebra.QuadraticForm.Basic
-public import Mathlib.Data.Matrix.Basic
-public import Mathlib.Data.Matrix.Block
-public import Mathlib.LinearAlgebra.Matrix.Notation
-public import Mathlib.LinearAlgebra.Matrix.RowCol
-public import Mathlib.GroupTheory.GroupAction.Ring
-public import Mathlib.GroupTheory.Perm.Fin
-public import Mathlib.LinearAlgebra.Alternating.Basic
-public import Mathlib.LinearAlgebra.Matrix.SemiringInverse
-public import Mathlib.LinearAlgebra.Matrix.PosDef
 public import Mathlib.Analysis.Matrix.PosDef
-public import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
-public import Mathlib.Algebra.Order.Field.Defs
-public import Mathlib.Algebra.BigOperators.Fin
-public import Mathlib.Data.Finsupp.Defs
 
 @[expose] public section
 
@@ -196,7 +176,6 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
       have : M = M.leadingMinor (n+1) (Nat.le_refl (n + 1)) := rfl
       rw [this]
       exact hM ⟨n+1, lt_add_one (n + 1)⟩
-
     /- To do:
     approach with Schur complement (I believe this is hard)
 
@@ -213,7 +192,6 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
       ∘ but det M > 0
       ∘ contradiction
     • all eigenvalues are positive → M is Posdef-/
-
     rw [IsHermitian.posDef_iff_eigenvalues_pos h] -- we must prove all eigenvalues are positive
     have hdet : M.det = ∏ j, h.eigenvalues j := by -- det is the product of eigenvalues [done]
         rw [h.det_eq_prod_eigenvalues]
@@ -226,29 +204,23 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
         apply Finset.prod_eq_zero_iff.mpr
         refine ⟨i, mem_univ i, H⟩
       linarith
-
     by_contra H -- by contradiction.
     push_neg at H
     obtain ⟨i, hi⟩ := H
     have hi : h.eigenvalues i < 0 := Std.lt_of_le_of_ne hi (hneq0 i)
-
     have hnot2 : ¬∃ j, j ≠ i ∧ h.eigenvalues j < 0 := by
       by_contra H
       obtain ⟨j, hne, hj⟩ := H
-
       let ufun := h.eigenvectorBasis i -- defining u and v
       let vfun := h.eigenvectorBasis j
       let u : Fin (n+1) →₀ R := Finsupp.equivFunOnFinite.symm ufun
       let v : Fin (n+1) →₀ R := Finsupp.equivFunOnFinite.symm vfun
       let un := u (Fin.last n)
       let vn := v (Fin.last n)
-
       have hortho : Orthonormal R h.eigenvectorBasis := h.eigenvectorBasis.orthonormal
-
       have hu2 : 0 > u.sum fun i ui ↦ u.sum fun j uj ↦ star ui * M i j * uj := by
         have hquad : u.sum (fun i ui => u.sum (fun j uj => star ui * M i j * uj))
           = h.eigenvalues i * ‖(ufun)‖^2 := by
-
           -- Gemini did this [not_done]
           have h1 : (u.sum fun i ui ↦ u.sum fun j uj ↦ star ui * M i j * uj) =
             u.sum (fun i ui => star ui * (M.mulVec ufun i)) := by
@@ -264,17 +236,13 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
             intro x hx1 hx2
             rw [Finsupp.notMem_support_iff] at hx2
             exact mul_eq_zero_of_right (M a x) hx2
-
-
           have h2 : M.mulVec ufun = fun k => h.eigenvalues i * ufun k :=
             h.mulVec_eigenvectorBasis i
-
           have h3 : (u.sum fun i_1 ui ↦ star ui * (fun k ↦ h.eigenvalues i * ufun.ofLp k) i_1) =
             h.eigenvalues i * u.sum (fun i ui => star ui * ui) := by
             unfold Finsupp.sum
             simp [Finset.mul_sum, mul_comm, mul_assoc]
             congr
-
           have hnorm : u.sum (fun i ui => star ui * ui) = ‖ufun‖^2 := by
             unfold u Finsupp.sum
             rw [Finset.sum_subset (Finset.subset_univ _)]
@@ -290,7 +258,6 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
                 or_self]
               exact hx2
           rw [h1, h2, h3, hnorm]
-
         rw[hquad]
         have : ‖ufun‖ ^ 2 > 0 := by
           have : ‖ufun‖ ≠ 0 := by
@@ -298,13 +265,10 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
             exact Ne.symm zero_ne_one
           exact sq_pos_iff.mpr this
         exact mul_neg_of_neg_of_pos hi this
-
-
       have hv2 : 0 > v.sum fun i vi ↦ v.sum fun j vj ↦ star vi * M i j * vj := by
       -- copy the one above [done]
         have hquad : v.sum (fun i vi => v.sum (fun j vj => star vi * M i j * vj))
           = h.eigenvalues j * ‖(vfun)‖^2 := by
-
           -- Gemini did this [not_done]
           have h1 : (v.sum fun i vi ↦ v.sum fun j vj ↦ star vi * M i j * vj) =
             v.sum (fun i vi => star vi * (M.mulVec vfun i)) := by
@@ -320,17 +284,13 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
             intro x hx1 hx2
             rw [Finsupp.notMem_support_iff] at hx2
             exact mul_eq_zero_of_right (M a x) hx2
-
-
           have h2 : M.mulVec vfun = fun k => h.eigenvalues j * vfun k :=
             h.mulVec_eigenvectorBasis j
-
           have h3 : (v.sum fun i_1 vi ↦ star vi * (fun k ↦ h.eigenvalues j * vfun.ofLp k) i_1) =
           h.eigenvalues j * v.sum (fun i vi => star vi * vi) := by
             unfold Finsupp.sum
             simp [Finset.mul_sum, mul_comm, mul_assoc]
             congr
-
           have hnorm : v.sum (fun i vi => star vi * vi) = ‖vfun‖^2 := by
             unfold v Finsupp.sum
             rw [Finset.sum_subset (Finset.subset_univ _)]
@@ -346,7 +306,6 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
                 or_self]
               exact hx2
           rw [h1, h2, h3, hnorm]
-
         rw[hquad]
         have : ‖vfun‖ ^ 2 > 0 := by
           have : ‖vfun‖ ≠ 0 := by
@@ -354,7 +313,6 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
             exact Ne.symm zero_ne_one
           exact sq_pos_iff.mpr this
         exact mul_neg_of_neg_of_pos hj this
-
       have hu : u ≠ 0 := by -- bloated [not_done]
         by_contra H
         apply_fun Finsupp.equivFunOnFinite at H
@@ -368,7 +326,6 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
           exact rfl
         rw [h0] at this
         simp only [WithLp.ofLp_zero, star_trivial, dotProduct_zero, zero_ne_one] at this
-
       have hv : v ≠ 0 := by -- copy the one above [done]
         by_contra H
         apply_fun Finsupp.equivFunOnFinite at H
@@ -382,14 +339,11 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
           exact rfl
         rw [h0] at this
         simp only [WithLp.ofLp_zero, star_trivial, dotProduct_zero, zero_ne_one] at this
-
       let wfun : Fin (n+1) → R := fun k ↦ vn * u k - un * v k
       let w := Finsupp.equivFunOnFinite.symm wfun -- we define w like this
-
       have hwn : w (Fin.last n) = 0 := by -- last element is 0
         simp [w, wfun, un, vn]
         ring
-
       have hw0 : w ≠ 0 := by -- this is harder than expected [not_done]
         by_contra H -- by contradiction
         unfold w wfun at H
@@ -427,24 +381,19 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
           have h_norm := hortho.1 j
           rw [hv] at h_norm
           simp at h_norm
-
         · unfold un at hun
           push_neg at hun
-
           -- the following argument says that if the last component of a (eigen)vector u is 0
           -- then ut M u > 0
           -- it is later used again and I believe it should be a lemma somewhere
           have h_pos : 0 < (u.sum fun i ui ↦ u.sum fun j uj ↦ star ui * M i j * uj) := by
             let f := (Fin.castLE (Nat.le_succ n))
-
             -- trivial [done]
             have hinj : Set.InjOn f (f⁻¹' ↑u.support) := by
               intro x hx y hy heq
               apply Fin.castLE_injective
               exact heq
-
             let u2 : Fin n →₀ ℝ := u.comapDomain f hinj
-
             -- this looks so bad [not_done]
             -- ut M u = u2t Mn u2
             have heq : (u.sum fun i ui ↦ u.sum fun j uj ↦ star ui * M i j * uj) =
@@ -467,7 +416,6 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
               · intro d
                 simp only [star_zero, zero_mul]
                 exact Finsupp.sum_zero
-
             have hu20 : u2 ≠ 0 := by -- this is ok [done]
               by_contra H
               apply hu
@@ -480,28 +428,20 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
                 have : u2 j = 0 := by simp_rw[H] ; rfl
                 rw [Finsupp.comapDomain_apply] at this
                 exact this
-
             rw [heq]
             exact hMn_pos.2 hu20
-
           linarith
-
-
       have hwn : w (Fin.last n) = 0 := by -- last element is 0 [done]
         simp [w, wfun, un, vn]
         ring
-
       have h_pos : 0 < (w.sum fun i wi ↦ w.sum fun j wj ↦ star wi * M i j * wj) := by
         let f := (Fin.castLE (Nat.le_succ n))
-
         -- trivial [done]
         have hinj : Set.InjOn f (f⁻¹' ↑w.support) := by
           intro x hx y hy heq
           apply Fin.castLE_injective
           exact heq
-
         let w2 : Fin n →₀ ℝ := w.comapDomain f hinj
-
         -- this looks so bad [not_done]
         have heq : (w.sum fun i wi ↦ w.sum fun j wj ↦ star wi * M i j * wj) =
           (w2.sum fun i w2i ↦ w2.sum fun j w2j ↦ star w2i * Mn i j * w2j) := by
@@ -523,7 +463,6 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
           · intro d
             simp only [star_zero, zero_mul]
             exact Finsupp.sum_zero
-
         have hw20 : w2 ≠ 0 := by -- this is ok [done]
           by_contra H
           apply hw0
@@ -536,16 +475,13 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
             have : w2 j = 0 := by simp_rw[H] ; rfl
             rw [Finsupp.comapDomain_apply] at this
             exact this
-
         rw [heq]
         exact hMn_pos.2 hw20
-
       have h_neg : (w.sum fun i wi ↦ w.sum fun j wj ↦ star wi * M i j * wj) ≤ 0 := by
         -- just sums [not_done]
         have heq : (w.sum fun i wi ↦ w.sum fun j wj ↦ star wi * M i j * wj) =
           vn^2 * (u.sum fun i ui ↦ u.sum fun j uj ↦ star ui * M i j * uj) +
           un^2 * (v.sum fun i vi ↦ v.sum fun j vj ↦ star vi * M i j * vj) := by
-
           have h1 : -- this should be a lemma and it will make things easier everywhere [IMPORTANT]
             (w.sum fun i wi ↦ w.sum fun j wj ↦ star wi * M i j * wj) =
             ∑ i : Fin (n+1), ∑ j : Fin (n+1), star (w i) * M i j * (w j) := by
@@ -555,7 +491,6 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
               rw [Finsupp.sum_fintype]
               · intro a ; simp
             · intro b ; simp
-
           have h2 :
             (∑ i, ∑ j, star (w i) * M i j * (w j)) =
             (vn^2 * ∑ i, ∑ j, star (u i) * M i j * (u j)) -
@@ -582,13 +517,11 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
               ring_nf
             simp [hmul1, hmul2, hmul3, hmul4]
             ring
-
           have h3 :
             (vn * un * ∑ i, ∑ j, star (u i) * M i j * (v j)) = 0 ∧
             (un * vn * ∑ i, ∑ j, star (v i) * M i j * (u j)) = 0 := by
             constructor
             · apply mul_eq_zero_of_right
-
               have horth' : ∑ i, vfun.ofLp i * u i = 0 := by
                 simp only [u, Finsupp.coe_equivFunOnFinite_symm]
                 have hort := hortho.2 hne.symm
@@ -597,14 +530,12 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
                 rw[← hort]
                 unfold ufun vfun
                 congr
-
               have ht : (∑ i, ∑ j, star (u i) * M i j * v j) =
                 ∑ i, star (u i) * (M.mulVec vfun i) := by
                 unfold Matrix.mulVec dotProduct
                 simp_rw [Finset.mul_sum]
                 simp_rw [mul_assoc]
                 congr
-
               have hMv : M.mulVec vfun = fun k => h.eigenvalues j * vfun k := by
                 simpa using h.mulVec_eigenvectorBasis j
               rw [ht]
@@ -612,9 +543,7 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
               simp only [mul_comm, mul_assoc, ← mul_sum, mul_eq_zero]
               right
               exact horth'
-
             · apply mul_eq_zero_of_right
-
               have horth' : ∑ i, ufun.ofLp i * v i = 0 := by
                 simp only [v, Finsupp.coe_equivFunOnFinite_symm]
                 have hort := hortho.2 hne
@@ -623,14 +552,12 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
                 rw[← hort]
                 unfold ufun vfun
                 congr
-
               have ht : (∑ i, ∑ j, star (v i) * M i j * u j) =
                 ∑ i, star (v i) * (M.mulVec ufun i) := by
                 unfold Matrix.mulVec dotProduct
                 simp_rw [Finset.mul_sum]
                 simp_rw [mul_assoc]
                 congr
-
               have hMv : M.mulVec ufun = fun k => h.eigenvalues i * ufun k := by
                 simpa using h.mulVec_eigenvectorBasis i
               rw [ht]
@@ -638,7 +565,6 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
               simp only [mul_comm, mul_assoc, ← mul_sum, mul_eq_zero]
               right
               exact horth'
-
           rw [h1, h2]
           rw [h3.1, h3.2]
           simp only [sub_zero]
@@ -659,13 +585,9 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
               · intro a ; simp
             · intro b ; simp
           rw [h4, h5]
-
-
         rw [heq]
         nlinarith
-
       linarith
-
     have honlyone: ∀ (j : Fin (n + 1)), j ≠ i → 0 < h.eigenvalues j := by -- [done]
       by_contra H
       push_neg at H
@@ -673,7 +595,6 @@ theorem isPosDef_if_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} (h : M.
       have hj : h.eigenvalues j < 0 := Std.lt_of_le_of_ne hj (hneq0 j)
       have hthereis2 : ∃ j, j ≠ i ∧ h.eigenvalues j < 0 := by use j
       exact hnot2 hthereis2
-
     have : M.det < 0 := by -- if there is only one... [done]
       rw [hdet]
       have : h.eigenvalues i * ∏ j ∈ Finset.univ.erase i, h.eigenvalues j = ∏ j, h.eigenvalues j :=
