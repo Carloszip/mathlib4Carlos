@@ -35,7 +35,7 @@ The main results are complete, but several parts remain technically rough or cou
 There are also limitations in generality:
 
 1. Matrices are indexed by `Fin n` for natural numbers `n`. A more general indexing type could likely be supported.
-2. The result is currently implemented only over `ℝ`. Sylvester’s criterion also holds over `ℂ`, but implementing this cleanly in Lean is difficult because determinants of Hermitian matrices are real while Lean’s typeclass requirements complicate expressing positivity conditions.
+2. The result is currently implemented only over `ℝ`. Sylvester’s criterion also holds over `ℂ`, but implementing this cleanly in Lean is difficult. The determinant of an hermitian matriy over `ℂ` is a real number, and thus positivity can be checked. However, Lean does not know this, so checking if the determinant is greater than zero yields an error.
 
 ---
 
@@ -43,12 +43,12 @@ There are also limitations in generality:
 
 The following references were used:
 
-- Wikipedia: *Sylvester’s criterion*  
-  https://en.wikipedia.org/wiki/Sylvester%27s_criterion  
+- Wikipedia: *Sylvester’s criterion*
+  https://en.wikipedia.org/wiki/Sylvester%27s_criterion
   Used for the proof of forward implication.
 
-- Lecture notes: Mikhail Lavrov, *Linear Algebra Lecture Notes*, Chapter 1 Lecture 5  
-  https://misha.fish/archive/docs/484-spring-2019/ch1lec5.pdf  
+- Lecture notes: Mikhail Lavrov, *Linear Algebra Lecture Notes*, Chapter 1 Lecture 5
+  https://misha.fish/archive/docs/484-spring-2019/ch1lec5.pdf
   Used as the main reference for backward reasoning.
 
 - mathlib documentation and existing Lean formalizations for matrix, eigenvalue, and determinant results.
@@ -68,4 +68,3 @@ Overall:
 
 - Human work: project structure, definitions, debugging, integration with mathlib, and most proofs.
 - AI assistance: organizing complex proof steps and suggesting technical transformations, later corrected and completed manually.
-
