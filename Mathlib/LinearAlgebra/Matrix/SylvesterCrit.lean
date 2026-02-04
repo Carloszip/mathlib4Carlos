@@ -4,6 +4,12 @@ public import Mathlib.Analysis.Matrix.PosDef
 
 @[expose] public section
 
+/-!
+## Report
+
+[Report: Sylvester Criterion](https://github.com/Carloszip/mathlib4Carlos/blob/sylvester-criterion/report_SylvesterCrit.md)
+-/
+
 universe v
 
 open Equiv Equiv.Perm Finset Function
@@ -614,3 +620,10 @@ theorem isPosDef_iff_Det_pos_leadingMinors {M : Matrix (Fin n) (Fin n) R} -- [do
   fun h2 => isPosDef_if_Det_pos_leadingMinors h h2⟩
 
 end Matrix
+
+/-!
+## Bild
+
+![Brn Mathlib](https://github.com/Carloszip/mathlib4Carlos/blob/sylvester-criterion/brnmathlib.png)
+
+-/
